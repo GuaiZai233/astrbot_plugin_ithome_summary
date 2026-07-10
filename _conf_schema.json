@@ -1,0 +1,66 @@
+{
+    "ai_summary_enabled": {
+        "description": "启用 AI 总结",
+        "hint": "关闭后卡片底部不再生成 AI 总结（该栏显示为未启用）",
+        "type": "bool",
+        "default": true
+    },
+    "openai_base_url": {
+        "description": "OpenAI 兼容端点",
+        "hint": "自定义 OpenAI 兼容 API 的 base url，例如 https://api.openai.com/v1 。留空则使用 AstrBot 框架当前正在使用的大模型 provider。",
+        "type": "string",
+        "default": ""
+    },
+    "openai_api_key": {
+        "description": "API Key",
+        "hint": "OpenAI 兼容端点的 API Key。仅在填写了上面的端点时生效。",
+        "type": "string",
+        "default": ""
+    },
+    "openai_model": {
+        "description": "模型名称",
+        "hint": "请求所使用的模型名，例如 gpt-4o-mini。仅在填写了自定义端点时生效。",
+        "type": "string",
+        "default": "gpt-4o-mini"
+    },
+    "summary_prompt": {
+        "description": "总结提示词",
+        "hint": "用于生成总结的提示词，{content} 会被替换为新闻正文。",
+        "type": "text",
+        "default": "请用一行、不超过40字总结以下新闻：{content}"
+    },
+    "body_max_chars": {
+        "description": "正文最大字数",
+        "hint": "卡片中正文超过该字数将被截断，避免图片过长。",
+        "type": "int",
+        "slider": {
+            "min": 200,
+            "max": 3000,
+            "step": 100
+        },
+        "default": 1200
+    },
+    "dedupe_interval": {
+        "description": "防重复秒数",
+        "hint": "同一会话内，该时间内同一条新闻只解析一次。设为 0 表示不去重。",
+        "type": "int",
+        "slider": {
+            "min": 0,
+            "max": 600,
+            "step": 10
+        },
+        "default": 120
+    },
+    "whitelist": {
+        "description": "会话白名单",
+        "hint": "填写会话ID后，只有白名单会话中的链接会被解析。留空表示不限制。",
+        "type": "list",
+        "default": []
+    },
+    "blacklist": {
+        "description": "会话黑名单",
+        "hint": "黑名单会话中的链接不会被解析。",
+        "type": "list",
+        "default": []
+    }
+}

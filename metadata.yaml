@@ -1,0 +1,10 @@
+name: astrbot_plugin_ithome_summary
+display_name: IT之家新闻卡片
+desc: 自动检测消息中的 IT之家(ithome.com) 新闻链接，解析全文并渲染为带 AI 总结的美观图片卡片。
+help: |
+  在任意会话发送 IT之家 新闻链接（如 https://m.ithome.com/html/974846.htm 或 https://www.ithome.com/0/974/846.htm），
+  插件会自动解析并回复一张包含标题、时间、正文、AI总结的图片卡片。
+  AI 总结可在插件配置中填写 OpenAI 兼容端点/Key/模型；留空则使用 AstrBot 框架当前配置的大模型。
+version: v1.0.0
+author: frostfallx
+repo: https://github.com/frostfallx/astrbot_plugin_ithome_summary
