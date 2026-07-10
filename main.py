@@ -201,6 +201,20 @@ class IThomeSummaryPlugin(Star):
         return " ".join((text or "").split()).strip() or "（无总结内容）"
 
     @staticmethod
+    def _is_image_bytes(data: bytes) -> bool:
+        """通过魔数判断是否为真正的图片，避免把渲染端点返回的 HTML 错误页当成图片发送。"""
+        if not data or len(data) < 4:
+            return False
+        # JPEG / PNG / GIF / WEBP / BMP
+        return (
+            data[:3] == b"\xff\xd8\xff"
+            or data[:8] == b"\x89PNG\r\n\x1a\n"
+            or data[:4] in (b"GIF8",)
+            or data[:4] == b"RIFF"
+            or data[:2] == b"BM"
+        )
+
+    @staticmethod
     def _autocrop(img_bytes: bytes) -> bytes:
         """裁掉整页截图在卡片之外的背景板留白。
 
@@ -311,30 +325,49 @@ class IThomeSummaryPlugin(Star):
             logger.error("[ithome] 模板不可用，无法渲染")
             return
 
-        try:
-            img_path = await self.html_render(
-                tmpl=self._template,
-                data=data,
-                return_url=False,
-                options={"type": "jpeg", "quality": 95, "full_page": True},
-            )
-        except Exception as e:
-            logger.error(f"[ithome] 渲染图片失败: {e}")
-            return
+        # 渲染。AstrBot 的 t2i 端点偶发返回 HTML 错误页而非图片，
+        # download_image_by_url 不校验内容便落盘，故这里带重试并用魔数校验，
+        # 避免把 HTML 当图片发出去导致 “rich media transfer failed” (retcode 1200)。
+        img_bytes = None
+        for attempt in range(1, 4):
+            try:
+                img_path = await self.html_render(
+                    tmpl=self._template,
+                    data=data,
+                    return_url=False,
+                    options={"type": "jpeg", "quality": 95, "full_page": True},
+                )
+            except Exception as e:
+                logger.warning(f"[ithome] 渲染图片失败(第{attempt}次): {e}")
+                continue
 
-        if not img_path:
-            logger.error("[ithome] 渲染返回空路径")
-            return
+            if not img_path:
+                logger.warning(f"[ithome] 渲染返回空路径(第{attempt}次)")
+                continue
 
-        # 以 bytes(base64) 形式发送，避免 AstrBot 与 QQ 协议端不共享文件系统时
-        # 出现 “rich media transfer failed” (retcode 1200) 的问题
-        try:
-            img_bytes = Path(img_path).read_bytes()
-        except Exception as e:
-            logger.error(f"[ithome] 读取渲染图片失败: {e}")
+            try:
+                raw = Path(img_path).read_bytes()
+            except Exception as e:
+                logger.warning(f"[ithome] 读取渲染图片失败(第{attempt}次): {e}")
+                continue
+
+            if not self._is_image_bytes(raw):
+                logger.warning(
+                    f"[ithome] 渲染端点返回的不是图片(第{attempt}次)，"
+                    "可能是错误页，重试中"
+                )
+                continue
+
+            img_bytes = raw
+            break
+
+        if not img_bytes:
+            logger.error("[ithome] 多次渲染均未得到有效图片，放弃发送")
             return
 
         # 裁掉整页截图在卡片之外的纯白留白
         img_bytes = self._autocrop(img_bytes)
 
+        # 以 bytes(base64) 形式发送，避免 AstrBot 与 QQ 协议端不共享文件系统时
+        # 出现 “rich media transfer failed” (retcode 1200) 的问题
         yield event.chain_result([Image.fromBytes(img_bytes)])
