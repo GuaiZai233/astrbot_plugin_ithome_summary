@@ -268,4 +268,12 @@ class IThomeSummaryPlugin(Star):
             logger.error("[ithome] 渲染返回空路径")
             return
 
-        yield event.chain_result([Image.fromFileSystem(img_path)])
+        # 以 bytes(base64) 形式发送，避免 AstrBot 与 QQ 协议端不共享文件系统时
+        # 出现 “rich media transfer failed” (retcode 1200) 的问题
+        try:
+            img_bytes = Path(img_path).read_bytes()
+        except Exception as e:
+            logger.error(f"[ithome] 读取渲染图片失败: {e}")
+            return
+
+        yield event.chain_result([Image.fromBytes(img_bytes)])
