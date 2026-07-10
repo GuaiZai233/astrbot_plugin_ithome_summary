@@ -1,5 +1,6 @@
 # main.py
 import html
+import io
 import re
 import time
 from pathlib import Path
@@ -197,6 +198,56 @@ class IThomeSummaryPlugin(Star):
     def _one_line(text: str) -> str:
         return " ".join((text or "").split()).strip() or "（无总结内容）"
 
+    @staticmethod
+    def _autocrop(img_bytes: bytes) -> bytes:
+        """裁掉整页截图在卡片之外的背景板留白。
+
+        渲染服务的视口宽度固定(约1280px)，CSS 背景色会铺满整个画布，
+        故 html 宽度无法收窄截图。卡片本身接近纯白，坐落在灰色渐变背景上，
+        因此定位“近白”的卡片区域并留出少量灰底边距后裁剪。
+        """
+        try:
+            from PIL import Image as PILImage
+
+            im = PILImage.open(io.BytesIO(img_bytes)).convert("RGB")
+            px = im.load()
+            W, H = im.size
+            thr = 246  # 近白阈值
+
+            def is_card(x: int, y: int) -> bool:
+                r, g, b = px[x, y]
+                return r >= thr and g >= thr and b >= thr
+
+            # 逐行/列扫描定位近白卡片包围盒
+            left, right, top, bottom = W, -1, H, -1
+            step = 2  # 采样步长，加速
+            for y in range(0, H, step):
+                for x in range(0, W, step):
+                    if is_card(x, y):
+                        if x < left:
+                            left = x
+                        if x > right:
+                            right = x
+                        if y < top:
+                            top = y
+                        if y > bottom:
+                            bottom = y
+            if right < 0 or bottom < 0:
+                return img_bytes
+
+            margin = 28  # 保留灰底边距
+            left = max(left - margin, 0)
+            top = max(top - margin, 0)
+            right = min(right + margin, W)
+            bottom = min(bottom + margin, H)
+            cropped = im.crop((left, top, right, bottom))
+            out = io.BytesIO()
+            cropped.save(out, format="JPEG", quality=95)
+            return out.getvalue()
+        except Exception as e:
+            logger.warning(f"[ithome] 自动裁剪失败，使用原图: {e}")
+            return img_bytes
+
     # ---------- 主入口 ----------
     @filter.event_message_type(filter.EventMessageType.ALL)
     async def on_message(self, event: AstrMessageEvent):
@@ -275,5 +326,8 @@ class IThomeSummaryPlugin(Star):
         except Exception as e:
             logger.error(f"[ithome] 读取渲染图片失败: {e}")
             return
+
+        # 裁掉整页截图在卡片之外的纯白留白
+        img_bytes = self._autocrop(img_bytes)
 
         yield event.chain_result([Image.fromBytes(img_bytes)])
