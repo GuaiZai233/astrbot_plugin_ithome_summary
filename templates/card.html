@@ -9,14 +9,18 @@
         box-sizing: border-box;
     }
 
+    html, body {
+        width: fit-content;
+    }
+
     body {
         font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", sans-serif;
         background: linear-gradient(135deg, #f0f2f5 0%, #e6e9ef 100%);
         padding: 32px;
-        width: 760px;
     }
 
     .card {
+        width: 700px;
         background: #ffffff;
         border-radius: 20px;
         overflow: hidden;
@@ -50,7 +54,6 @@
         left: 20px;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
         background: #d70c19;
         color: #fff;
         font-weight: 700;
@@ -82,12 +85,6 @@
         margin-bottom: 20px;
     }
 
-    .meta span {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-    }
-
     .divider {
         height: 1px;
         background: linear-gradient(to right, #d70c19, #f0f2f5);
@@ -105,15 +102,11 @@
 
     .summary {
         background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
-        border-left: 5px solid #d70c19;
         border-radius: 12px;
         padding: 18px 20px;
     }
 
     .summary-label {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
         font-size: 15px;
         font-weight: 700;
         color: #d70c19;
@@ -147,14 +140,13 @@
         <div class="content">
             <div class="title">{{ title }}</div>
             <div class="meta">
-                {% if post_date %}<span>🕒 {{ post_date }}</span>{% endif %}
-                {% if author %}<span>✍️ {{ author }}</span>{% endif %}
-                {% if source %}<span>📰 {{ source }}</span>{% endif %}
+                {% if post_date %}<span>{{ post_date }}</span>{% endif %}
+                {% if source %}<span>来源：{{ source }}</span>{% endif %}
             </div>
             <div class="divider"></div>
             <div class="body">{{ body }}</div>
             <div class="summary">
-                <div class="summary-label">🤖 AI 总结</div>
+                <div class="summary-label">AI 总结</div>
                 <div class="summary-text">{{ ai_summary }}</div>
             </div>
         </div>

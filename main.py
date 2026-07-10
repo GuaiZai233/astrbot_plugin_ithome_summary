@@ -145,7 +145,8 @@ class IThomeSummaryPlugin(Star):
             return "（AI 总结未启用）"
 
         prompt_tmpl = self.config.get(
-            "summary_prompt", "请用一行、不超过40字总结以下新闻：{content}"
+            "summary_prompt",
+            "请用一段话总结以下新闻，不少于30字、不超过100字，不要换行：{content}",
         )
         # 控制送入模型的正文长度
         prompt = prompt_tmpl.replace("{content}", content[:1500])
@@ -240,7 +241,6 @@ class IThomeSummaryPlugin(Star):
         data = {
             "title": title,
             "post_date": self._tag(xml, "postdate"),
-            "author": self._tag(xml, "newsauthor") or self._tag(xml, "z"),
             "source": self._tag(xml, "newssource"),
             "header_image": header_image,
             "body": body or "（正文为空）",

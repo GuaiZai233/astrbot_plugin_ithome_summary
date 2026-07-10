@@ -27,7 +27,7 @@
         "description": "总结提示词",
         "hint": "用于生成总结的提示词，{content} 会被替换为新闻正文。",
         "type": "text",
-        "default": "请用一行、不超过40字总结以下新闻：{content}"
+        "default": "请用一段话总结以下新闻，不少于30字、不超过100字，不要换行：{content}"
     },
     "body_max_chars": {
         "description": "正文最大字数",
