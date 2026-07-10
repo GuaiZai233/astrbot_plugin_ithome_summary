@@ -1,8 +1,10 @@
 # main.py
+import hashlib
 import html
 import io
 import re
 import time
+from datetime import datetime
 from pathlib import Path
 
 import aiohttp
@@ -147,7 +149,7 @@ class IThomeSummaryPlugin(Star):
 
         prompt_tmpl = self.config.get(
             "summary_prompt",
-            "请用一段话总结以下新闻，不少于30字、不超过100字，不要换行：{content}",
+            "请用简洁流畅的语言总结以下新闻的核心内容：{content}",
         )
         # 控制送入模型的正文长度
         prompt = prompt_tmpl.replace("{content}", content[:1500])
@@ -289,6 +291,10 @@ class IThomeSummaryPlugin(Star):
 
         header_image = self._tag(xml, "image") or self._first_img(detail_raw)
 
+        now = datetime.now()
+        stamp = now.strftime("%Y-%m-%d %H:%M:%S")
+        digest = hashlib.md5(str(now.timestamp()).encode("utf-8")).hexdigest()[:7]
+
         data = {
             "title": title,
             "post_date": self._tag(xml, "postdate"),
@@ -296,6 +302,7 @@ class IThomeSummaryPlugin(Star):
             "header_image": header_image,
             "body": body or "（正文为空）",
             "ai_summary": await self._summarize(body or title),
+            "footer": f"Genered by FrostFallx | {stamp} | {digest}",
         }
 
         if not self._template:
